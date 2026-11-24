@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de diagnóstico: caso Cursya</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F4F0EA;
+    --surface: #FFFFFF;
+    --surface-2: #FBF9F6;
+    --ink: #221B27;
+    --ink-soft: #6B6270;
+    --orange: #E06A25;
+    --orange-deep: #C1531B;
+    --purple: #5B3FA6;
+    --purple-deep: #3C2A70;
+    --purple-soft: #EFE9FA;
+    --border: #E4DED4;
+    --shadow: 0 1px 2px rgba(34,27,39,0.06);
+    --radius: 14px;
+    --font-head: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+    --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #18141D;
+      --surface: #221C29;
+      --surface-2: #1D1822;
+      --ink: #F2EEF6;
+      --ink-soft: #B4A9BE;
+      --orange: #F08246;
+      --orange-deep: #E06A25;
+      --purple: #9A82DE;
+      --purple-deep: #C9B8F2;
+      --purple-soft: #2B2338;
+      --border: #372E42;
+      --shadow: 0 1px 2px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #18141D;
+    --surface: #221C29;
+    --surface-2: #1D1822;
+    --ink: #F2EEF6;
+    --ink-soft: #B4A9BE;
+    --orange: #F08246;
+    --orange-deep: #E06A25;
+    --purple: #9A82DE;
+    --purple-deep: #C9B8F2;
+    --purple-soft: #2B2338;
+    --border: #372E42;
+    --shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar .bar { height: 9px; border-radius: 5px; background: var(--orange); }
+  .topbar .bar:nth-child(1) { width: 26px; }
+  .topbar .bar:nth-child(2) { width: 14px; background: var(--purple); }
+  .topbar .label {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-left: 4px;
+  }
+
+  .wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 36px 20px 64px;
+  }
+
+  h1 {
+    font-family: var(--font-head);
+    font-weight: 800;
+    font-size: clamp(26px, 5vw, 34px);
+    color: var(--purple-deep);
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  h2 {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 20px;
+    margin: 0 0 12px;
+    color: var(--ink);
+  }
+  p { margin: 0 0 14px; }
+  .lede { color: var(--ink-soft); font-size: 16px; max-width: 58ch; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 26px 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .brief {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin: 20px 0 26px;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .brief strong { color: var(--purple-deep); }
+
+  .rules {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 26px;
+    display: grid;
+    gap: 10px;
+  }
+  .rules li {
+    display: flex;
+    gap: 10px;
+    font-size: 14.5px;
+    color: var(--ink-soft);
+  }
+  .rules li .dot {
+    flex: none;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--orange);
+    margin-top: 8px;
+  }
+
+  button.primary {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 15.5px;
+    color: #fff;
+    background: var(--purple);
+    border: none;
+    border-radius: 10px;
+    padding: 13px 24px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  button.primary:hover:not(:disabled) { background: var(--purple-deep); }
+  button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.primary:active:not(:disabled) { transform: scale(0.98); }
+
+  button.secondary {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 14.5px;
+    color: var(--purple-deep);
+    background: var(--purple-soft);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 20px;
+    cursor: pointer;
+  }
+  button.secondary:hover { filter: brightness(0.97); }
+
+  .progress-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+  }
+  .progress-track {
+    height: 6px;
+    border-radius: 4px;
+    background: var(--border);
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--orange), var(--purple));
+    border-radius: 4px;
+    transition: width 0.35s ease;
+  }
+
+  .front-tag {
+    display: inline-block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--purple-deep);
+    background: var(--purple-soft);
+    border-radius: 999px;
+    padding: 4px 12px;
+    margin-bottom: 14px;
+  }
+
+  .scenario {
+    background: var(--surface-2);
+    border-left: 3px solid var(--orange);
+    border-radius: 8px;
+    padding: 16px 18px;
+    font-size: 15px;
+    margin-bottom: 20px;
+    color: var(--ink);
+  }
+
+  .question-prompt {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+
+  .options { display: grid; gap: 10px; margin-bottom: 22px; }
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    text-align: left;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 16px;
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .option:hover { border-color: var(--purple); }
+  .option.selected {
+    border-color: var(--purple);
+    background: var(--purple-soft);
+  }
+  .option .letter {
+    flex: none;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    color: var(--ink-soft);
+  }
+  .option.selected .letter {
+    border-color: var(--purple);
+    background: var(--purple);
+    color: #fff;
+  }
+
+  .actions { display: flex; justify-content: flex-end; }
+
+  .hidden { display: none; }
+
+  .score-hero {
+    text-align: center;
+    padding: 6px 0 8px;
+  }
+  .score-number {
+    font-family: var(--font-head);
+    font-weight: 800;
+    font-size: 56px;
+    color: var(--purple);
+    line-height: 1;
+  }
+  .score-max { font-size: 17px; color: var(--ink-soft); }
+  .band-label {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 21px;
+    color: var(--orange-deep);
+    margin: 10px 0 6px;
+  }
+  .band-desc { color: var(--ink-soft); font-size: 15px; max-width: 52ch; margin: 0 auto 26px; }
+
+  .gabarito-table {
+    display: grid;
+    gap: 14px;
+    margin: 22px 0 8px;
+  }
+  .g-item {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    background: var(--surface-2);
+  }
+  .g-item .g-front {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--purple-deep);
+    text-transform: none;
+    margin-bottom: 6px;
+  }
+  .g-item .g-your {
+    font-size: 14.5px;
+    margin-bottom: 6px;
+  }
+  .g-item .g-your .flag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 6px;
+    padding: 1px 8px;
+    margin-right: 8px;
+  }
+  .flag.best { background: #E4F3E8; color: #276B41; }
+  .flag.ok { background: #FBF0DC; color: #8A5B12; }
+  .flag.partial { background: #FDECD8; color: #A45A16; }
+  .flag.weak { background: #FBE7E5; color: #A33A2E; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .flag.best { background: #1F3A28; color: #8FD6A5; }
+    :root:not([data-theme="light"]) .flag.ok { background: #3B2F14; color: #E3B863; }
+    :root:not([data-theme="light"]) .flag.partial { background: #3B2814; color: #E6A768; }
+    :root:not([data-theme="light"]) .flag.weak { background: #3B221E; color: #E79589; }
+  }
+  :root[data-theme="dark"] .flag.best { background: #1F3A28; color: #8FD6A5; }
+  :root[data-theme="dark"] .flag.ok { background: #3B2F14; color: #E3B863; }
+  :root[data-theme="dark"] .flag.partial { background: #3B2814; color: #E6A768; }
+  :root[data-theme="dark"] .flag.weak { background: #3B221E; color: #E79589; }
+
+  .g-item .g-ideal {
+    font-size: 14px;
+    color: var(--ink-soft);
+    border-top: 1px dashed var(--border);
+    padding-top: 10px;
+    margin-top: 8px;
+  }
+  .g-item .g-ideal strong { color: var(--ink); font-weight: 600; }
+
+  .final-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 26px;
+  }
+
+  footer {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 12.5px;
+    margin-top: 30px;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="bar"></div>
+  <div class="bar"></div>
+  <span class="label">RP &amp; Comunicação Digital · Aula 14</span>
+</div>
+
+<div class="wrap">
+
+  <!-- INTRO -->
+  <section id="screen-intro">
+    <h1>Diagnóstico antes da ação</h1>
+    <p class="lede">Um simulador de decisão em oito etapas, a partir de um caso fictício inspirado em situações reais de expansão internacional e adoção de inteligência artificial em ambientes corporativos.</p>
+
+    <div class="brief">
+      <p><strong>O caso: Cursya</strong></p>
+      <p>A Cursya é uma edtech B2B fundada em Belo Horizonte em 2014, que vende treinamentos corporativos (compliance, liderança, soft skills, segurança do trabalho) para mais de 400 empresas clientes no Brasil. Nos últimos dezoito meses, a empresa tomou duas decisões estruturais: começou a expandir a operação comercial para México, Colômbia e Chile, e lançou a Cursya IA, um tutor de inteligência artificial generativa integrado à plataforma, que responde dúvidas dos alunos em tempo real e personaliza trilhas de aprendizagem a partir do desempenho de cada colaborador.</p>
+      <p style="margin-bottom:0">A diretoria pediu à área de comunicação um diagnóstico completo antes de qualquer decisão sobre a expansão internacional e sobre a Cursya IA. Você assume esse diagnóstico.</p>
+    </div>
+
+    <h2 style="font-size:16px; color:var(--ink-soft); font-weight:600;">Como funciona</h2>
+    <ul class="rules">
+      <li><span class="dot"></span>São oito situações, sempre sobre a mesma empresa. A cada etapa, a complexidade do problema aumenta e as alternativas exigem mais atenção aos detalhes do cenário.</li>
+      <li><span class="dot"></span>Cada situação tem uma pergunta com quatro alternativas. Mais de uma pode parecer razoável à primeira vista: escolha a que reflete a leitura diagnóstica mais completa para aquele momento específico do caso.</li>
+      <li><span class="dot"></span>Depois de confirmar uma resposta não é possível voltar e alterá-la.</li>
+      <li><span class="dot"></span>O resultado, com a pontuação e o comparativo entre suas respostas e a leitura mais estratégica de cada situação, só aparece ao final.</li>
+    </ul>
+
+    <button class="primary" onclick="startQuiz()">Começar simulação</button>
+  </section>
+
+  <!-- QUESTION -->
+  <section id="screen-question" class="hidden">
+    <div class="progress-row">
+      <span id="progress-label">Pergunta 1 de 8</span>
+      <span id="progress-score-hint">Diagnóstico em andamento</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:12.5%"></div></div>
+
+    <div class="card">
+      <span class="front-tag" id="q-front">Frente do diagnóstico</span>
+      <div class="scenario" id="q-scenario">Cenário</div>
+      <div class="question-prompt" id="q-prompt">Pergunta</div>
+      <div class="options" id="q-options"></div>
+      <div class="actions">
+        <button class="primary" id="btn-confirm" onclick="confirmAnswer()" disabled>Confirmar e avançar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="screen-result" class="hidden">
+    <div class="card score-hero">
+      <div class="score-number"><span id="final-score">0</span><span class="score-max">/24</span></div>
+      <div class="band-label" id="band-label">Classificação</div>
+      <p class="band-desc" id="band-desc">Descrição da classificação.</p>
+    </div>
+
+    <h2 style="margin-top:30px;">Gabarito: sua leitura em cada frente</h2>
+    <div class="gabarito-table" id="gabarito-table"></div>
+
+    <div class="final-actions">
+      <button class="secondary" id="btn-download" onclick="downloadResult()">Baixar resultado (.txt)</button>
+    </div>
+
+    <footer>Cursya é uma empresa fictícia criada para fins didáticos.</footer>
+  </section>
+
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    front: "Diagnóstico x execução",
+    scenario: "Um congresso internacional de tecnologia educacional convidou a Cursya para apresentar a Cursya IA na semana seguinte. O diretor de produto pede à comunicação um press release pronto em três dias, alegando que a oportunidade de visibilidade é rara e não pode ser perdida. Não há tempo hábil para um diagnóstico completo nas seis frentes antes do prazo.",
+    prompt: "Diante da urgência real do prazo, qual deve ser a resposta da comunicação?",
+    options: [
+      { text: "Aceitar a redação do release imediatamente, já que a oportunidade do congresso é rara e não pode ser perdida.", pts: 0 },
+      { text: "Recusar a demanda e insistir em conduzir o diagnóstico completo nas seis frentes antes de qualquer texto, mesmo sabendo que isso não cabe no prazo do convite.", pts: 1 },
+      { text: "Propor um diagnóstico rápido e focado nos pontos de maior risco, como a percepção pública sobre IA no ensino corporativo e a maturidade da governança de dados da Cursya, suficiente para orientar o texto sem abrir mão da leitura estratégica.", pts: 3 },
+      { text: "Delegar a redação do release ao departamento jurídico, já que o tema envolve inteligência artificial e dados sensíveis dos alunos.", pts: 1 }
+    ],
+    idealNote: "Diagnóstico não é sinônimo de processo longo. Diante de um prazo real, a competência diagnóstica está em calibrar o escopo aos pontos de maior risco, não em abrir mão da leitura estratégica nem em insistir num processo inviável no tempo disponível."
+  },
+  {
+    front: "Identidade organizacional",
+    scenario: "A Cursya declara publicamente que sua tecnologia existe para colocar 'a aprendizagem centrada no ser humano, com a tecnologia a serviço das pessoas'. Os dados de uso da Cursya IA mostram que, em conteúdos de soft skills, os alunos avaliam bem as respostas do tutor; já em conteúdos de compliance e segurança do trabalho, o volume de reclamações sobre respostas vagas ou incorretas é bem maior. Parte dos instrutores de compliance também manifestou desconforto com a automação desses conteúdos.",
+    prompt: "Qual leitura o diagnóstico de identidade deve priorizar diante desses dados?",
+    options: [
+      { text: "O achado mostra apenas resistência natural dos instrutores à automação, e não deveria influenciar o diagnóstico de identidade, que trata de valores declarados, não de reações internas à tecnologia.", pts: 0 },
+      { text: "A diferença de desempenho da Cursya IA entre soft skills e compliance indica que a alegação de 'tecnologia a serviço das pessoas' pode não se sustentar igualmente em todas as áreas de conteúdo, o que exige mapear onde a prática ainda não sustenta o discurso antes de comunicar a Cursya IA de forma genérica.", pts: 3 },
+      { text: "A resistência dos instrutores confirma que existe uma discrepância entre identidade declarada e identidade vivida, e o diagnóstico deve tratar isso como prioridade máxima antes de qualquer lançamento.", pts: 2 },
+      { text: "O ideal é aguardar a métrica geral de satisfação com a Cursya IA se estabilizar por mais alguns meses antes de tirar qualquer conclusão sobre identidade.", pts: 1 }
+    ],
+    idealNote: "O padrão mais relevante nos dados não é a resistência dos instrutores em si, mas a variação de desempenho da IA por domínio de conteúdo. Tratar isso como uma discrepância única entre discurso e prática, sem diferenciar onde a prática de fato falha, é uma leitura incompleta."
+  },
+  {
+    front: "Planejamento estratégico do negócio",
+    scenario: "As metas de negócio da Cursya são: fechar contratos em ao menos 15 empresas nos três novos países em dezoito meses; atingir 70% de adoção ativa da Cursya IA entre os alunos das empresas-clientes atuais; e manter a taxa de renovação de contratos corporativos acima de 90%, o indicador mais observado pelos investidores da rodada de investimento em curso. A equipe de comunicação tem orçamento e capacidade limitados para atuar nas três frentes com a mesma intensidade.",
+    prompt: "Diante dessa limitação de recursos, qual deveria ser a leitura estratégica prioritária da comunicação?",
+    options: [
+      { text: "Distribuir igualmente o esforço de comunicação entre os três objetivos, já que todos fazem parte do planejamento estratégico do negócio.", pts: 1 },
+      { text: "Priorizar a comunicação da expansão internacional, já que é o objetivo mais visível externamente e o que gera mais oportunidades de imprensa.", pts: 1 },
+      { text: "Priorizar a comunicação que sustente a renovação de contratos atuais, já que é o indicador mais observado pelos investidores nesta fase da empresa, e a adoção da Cursya IA está diretamente ligada a esse esforço, uma vez que baixa adoção tende a reduzir a percepção de valor do produto na hora da renovação.", pts: 3 },
+      { text: "Aguardar a definição do orçamento anual antes de decidir qualquer prioridade entre os três objetivos.", pts: 0 }
+    ],
+    idealNote: "O planejamento estratégico do negócio não deve ser lido apenas como uma lista de metas paralelas: é preciso identificar o indicador que mais pesa na fase atual da empresa e a cadeia de causa e efeito entre os objetivos, aqui entre adoção da IA, percepção de valor e renovação de contratos."
+  },
+  {
+    front: "Estrutura, cultura e governança",
+    scenario: "A comunicação participa dos comitês de lançamento de produto no Brasil, mas não das decisões sobre a expansão internacional, conduzidas de forma autônoma pela área de negócios. A comunicação descobre, ao revisar materiais enviados pelo distribuidor no Chile, que o contrato de parceria já assinado inclui cláusulas de marca e comunicação conjunta, e que o material de divulgação preparado pelo distribuidor supervaloriza a precisão da Cursya IA em conteúdos regulatórios. O material ainda não foi publicado.",
+    prompt: "Qual deve ser a ação prioritária da comunicação diante desse cenário?",
+    options: [
+      { text: "Como o problema está restrito à operação no Chile, delegar a correção ao time comercial local, mantendo a comunicação central fora da negociação.", pts: 0 },
+      { text: "Solicitar a revisão imediata do material antes da publicação, e usar o caso para propor que qualquer cláusula de comunicação ou marca em contratos internacionais passe por validação da comunicação central antes da assinatura, e não apenas depois.", pts: 3 },
+      { text: "Aguardar a publicação do material para avaliar a repercussão antes de decidir se é necessário intervir, já que o contrato já foi assinado e não pode mais ser alterado.", pts: 0 },
+      { text: "Pedir que a área jurídica avalie se as alegações do material violam alguma norma de publicidade, e seguir a recomendação jurídica sem necessidade de uma ação estrutural de comunicação.", pts: 1 }
+    ],
+    idealNote: "O contrato assinado não impede a correção do material antes da publicação, e o problema de fundo não é jurídico, é de governança: falta um ponto de validação da comunicação central em decisões internacionais que envolvem marca, antes que elas se tornem públicas."
+  },
+  {
+    front: "Mapeamento de públicos",
+    scenario: "No mapeamento de públicos da Cursya, duas categorias aparecem como formalmente únicas, mas escondem divisões internas relevantes: entre os instrutores, os de soft skills veem a Cursya IA como ferramenta de apoio, enquanto os de compliance e segurança citam risco de erro grave em temas regulatórios; entre os clientes corporativos, os times de RH querem engajamento e métricas de uso, enquanto os times de jurídico e compliance exigem garantias de precisão e auditabilidade das respostas da IA.",
+    prompt: "Qual abordagem de mapeamento evita o principal risco de leitura equivocada desse conjunto de públicos?",
+    options: [
+      { text: "Tratar 'instrutores' e 'clientes corporativos' como dois públicos únicos e coesos, já que cada um compartilha o mesmo vínculo formal com a Cursya.", pts: 0 },
+      { text: "Segmentar os públicos por subgrupos com interesses distintos dentro de cada categoria formal, reconhecendo que a mesma categoria de público pode abrigar expectativas e níveis de risco percebido muito diferentes.", pts: 3 },
+      { text: "Priorizar o mapeamento apenas dos públicos externos aos clientes corporativos, já que os instrutores são público interno e têm menor poder de influenciar a reputação da marca no mercado.", pts: 1 },
+      { text: "Focar o mapeamento no público jurídico e de compliance dos clientes corporativos, já que é o que representa o maior risco imediato de cancelamento de contrato.", pts: 2 }
+    ],
+    idealNote: "O risco central aqui não é deixar algum público de fora, mas tratar categorias formais como se fossem grupos homogêneos. RH e jurídico de um mesmo cliente, ou instrutores de áreas de conteúdo diferentes, podem ter expectativas opostas sobre o mesmo produto."
+  },
+  {
+    front: "Reputação e histórico institucional",
+    scenario: "Há dois anos, uma reportagem questionou se a Cursya IA, então em fase de testes, havia fornecido uma resposta incorreta sobre um procedimento de segurança do trabalho durante um piloto com uma indústria química. A empresa revisou o modelo, suspendeu temporariamente o tutor para conteúdos regulatórios e retomou apenas com validação humana obrigatória nesses temas. Hoje, buscas pelo nome da empresa não trazem mais a notícia entre os primeiros resultados e não houve novos incidentes registrados, mas o RH de um cliente importante comentou informalmente, em uma reunião recente, que 'ainda existe uma resistência interna' ao uso da IA em treinamentos de segurança.",
+    prompt: "Diante desse conjunto de sinais, qual leitura o diagnóstico de reputação deve fazer?",
+    options: [
+      { text: "Como a notícia não aparece mais entre os primeiros resultados de busca e não há novos incidentes, o episódio pode ser considerado superado e não precisa de atenção específica no diagnóstico atual.", pts: 0 },
+      { text: "O comentário informal do RH de um único cliente não é evidência suficiente para reabrir o tema, e o diagnóstico deve se basear apenas em dados de busca e ocorrência de incidentes, que são mais objetivos.", pts: 1 },
+      { text: "Mesmo com indicadores quantitativos favoráveis, o comentário do RH sugere que a percepção de risco pode persistir em públicos específicos, como os times de segurança do trabalho e compliance, mesmo depois de o problema técnico ter sido resolvido, o que justifica uma escuta qualitativa direcionada a esses públicos antes de qualquer nova decisão sobre o tema.", pts: 3 },
+      { text: "O correto é retomar publicamente o caso, admitindo o erro passado de forma proativa em uma nova campanha institucional sobre segurança e confiabilidade da IA.", pts: 1 }
+    ],
+    idealNote: "Indicadores quantitativos favoráveis (busca, ausência de novos incidentes) não esgotam a leitura de reputação. Um sinal qualitativo isolado pode apontar para uma percepção de risco que persiste em públicos específicos, e o diagnóstico precisa verificar isso antes de decidir entre silêncio e uma resposta pública."
+  },
+  {
+    front: "Ambiente competitivo e setorial",
+    scenario: "Nos três países para onde a Cursya está se expandindo, o debate sobre regulação de inteligência artificial em ambientes educacionais está em estágios muito diferentes: no Chile, um projeto de lei sobre transparência algorítmica em plataformas educacionais já está em tramitação avançada; na Colômbia, o debate ainda é incipiente e concentrado em proteção de dados, não em IA especificamente; no México, associações de RH já publicaram guias voluntários de boas práticas para IA em treinamento corporativo, sem força regulatória.",
+    prompt: "Qual decisão o diagnóstico de ambiente competitivo e setorial deve apoiar?",
+    options: [
+      { text: "Adotar um discurso institucional único sobre transparência algorítmica para os quatro países, já que a Cursya IA é a mesma tecnologia em todos eles.", pts: 1 },
+      { text: "Aguardar a definição da lei chilena antes de qualquer comunicação institucional sobre IA nos quatro mercados, para evitar contradições futuras.", pts: 0 },
+      { text: "Calibrar o nível de detalhe e o enquadramento do discurso institucional sobre a Cursya IA em cada mercado, priorizando transparência algorítmica mais explícita no Chile e adotando, nos demais países, uma postura alinhada aos guias voluntários e às expectativas ainda emergentes de cada um.", pts: 3 },
+      { text: "Delegar a decisão de posicionamento sobre IA a cada equipe comercial local, sem coordenação da comunicação central, já que cada país tem contexto regulatório próprio.", pts: 1 }
+    ],
+    idealNote: "A leitura do ambiente setorial mostra estágios regulatórios distintos entre os quatro mercados. Um discurso único ignora essa diferença, e paralisar a comunicação nos três países mais maduros por causa de um projeto de lei em outro país também não se justifica."
+  },
+  {
+    front: "Síntese das frentes do diagnóstico",
+    scenario: "Reunindo os achados anteriores: a Cursya IA funciona bem em soft skills, mas ainda gera dúvidas relevantes em conteúdos de compliance e segurança; a comunicação não participa da validação de cláusulas de marca em contratos internacionais antes da assinatura; a meta de renovação de contratos, a mais observada pelos investidores, depende da adoção da Cursya IA, mas os times de compliance e segurança dos clientes ainda demonstram reserva quanto à confiabilidade da ferramenta; e o ambiente regulatório sobre IA varia significativamente entre os países da expansão.",
+    prompt: "Diante de todo esse quadro, qual deve ser a prioridade real do plano de comunicação da Cursya nos próximos meses?",
+    options: [
+      { text: "Lançar uma grande campanha institucional internacional sobre os benefícios da Cursya IA, unificando a mensagem para acelerar a adoção em todos os mercados e reforçar a métrica de renovação valorizada pelos investidores.", pts: 1 },
+      { text: "Priorizar, antes de qualquer campanha ampla, a criação de um protocolo de validação de comunicação para contratos internacionais e uma comunicação segmentada e transparente sobre os limites da Cursya IA em conteúdos regulatórios, direcionada especificamente aos públicos de compliance e segurança que ainda demonstram reserva, e adaptar o discurso institucional a cada contexto regulatório nacional.", pts: 3 },
+      { text: "Concentrar o esforço em resolver a questão de governança dos contratos internacionais, já que é o único ponto que envolve risco jurídico direto, deixando os demais achados para um ciclo posterior de comunicação.", pts: 2 },
+      { text: "Deixar a priorização a cargo da área comercial internacional, já que é quem melhor conhece as particularidades de cada mercado e de cada contrato.", pts: 0 }
+    ],
+    idealNote: "Nenhuma frente isoladamente resolve o quadro. A prioridade real conecta o limite técnico da IA por domínio, a falha de governança em contratos, a heterogeneidade dos públicos de compliance e a variação regulatória por país, e não apenas o ponto de maior risco jurídico imediato ou a métrica de negócio mais visível."
+  }
+];
+
+const BANDS = [
+  { min: 0, max: 8, label: "Em construção", desc: "Ainda há tendência a agir antes de diagnosticar, ou a tratar as frentes do diagnóstico de forma isolada. Vale revisitar por que o diagnóstico precisa anteceder a escolha de instrumentos." },
+  { min: 9, max: 15, label: "Em desenvolvimento", desc: "Você reconhece a importância do diagnóstico em situações pontuais, mas ainda tem dificuldade em conectar diferentes frentes numa leitura única da organização." },
+  { min: 16, max: 20, label: "Consistente", desc: "Você aplica o diagnóstico de forma sistemática em cada frente, buscando causas antes de agir. O próximo passo é reforçar a integração entre frentes distintas." },
+  { min: 21, max: 24, label: "Estratégico", desc: "Você integra múltiplas frentes numa leitura conjunta e conecta o diagnóstico diretamente às prioridades de negócio, exatamente como a etapa de síntese exige." }
+];
+
+let current = 0;
+let selectedIndex = null;
+const answers = [];
+
+function startQuiz() {
+  document.getElementById('screen-intro').classList.add('hidden');
+  document.getElementById('screen-question').classList.remove('hidden');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[current];
+  selectedIndex = null;
+  document.getElementById('progress-label').textContent = `Pergunta ${current + 1} de ${QUESTIONS.length}`;
+  document.getElementById('progress-fill').style.width = `${((current + 1) / QUESTIONS.length) * 100}%`;
+  document.getElementById('q-front').textContent = q.front;
+  document.getElementById('q-scenario').textContent = q.scenario;
+  document.getElementById('q-prompt').textContent = q.prompt;
+
+  const letters = ['A', 'B', 'C', 'D'];
+  const optionsEl = document.getElementById('q-options');
+  optionsEl.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option';
+    btn.type = 'button';
+    btn.innerHTML = `<span class="letter">${letters[i]}</span><span>${opt.text}</span>`;
+    btn.onclick = () => selectOption(i);
+    btn.id = `opt-${i}`;
+    optionsEl.appendChild(btn);
+  });
+
+  document.getElementById('btn-confirm').disabled = true;
+}
+
+function selectOption(i) {
+  selectedIndex = i;
+  document.querySelectorAll('.option').forEach((el, idx) => {
+    el.classList.toggle('selected', idx === i);
+  });
+  document.getElementById('btn-confirm').disabled = false;
+}
+
+function confirmAnswer() {
+  if (selectedIndex === null) return;
+  const q = QUESTIONS[current];
+  answers.push({
+    front: q.front,
+    chosenText: q.options[selectedIndex].text,
+    pts: q.options[selectedIndex].pts,
+    idealNote: q.idealNote
+  });
+  current++;
+  if (current < QUESTIONS.length) {
+    renderQuestion();
+  } else {
+    showResult();
+  }
+}
+
+function showResult() {
+  document.getElementById('screen-question').classList.add('hidden');
+  document.getElementById('screen-result').classList.remove('hidden');
+
+  const total = answers.reduce((sum, a) => sum + a.pts, 0);
+  document.getElementById('final-score').textContent = total;
+
+  const band = BANDS.find(b => total >= b.min && total <= b.max) || BANDS[0];
+  document.getElementById('band-label').textContent = band.label;
+  document.getElementById('band-desc').textContent = band.desc;
+
+  const table = document.getElementById('gabarito-table');
+  table.innerHTML = '';
+  answers.forEach((a, i) => {
+    let flagClass = 'weak', flagText = 'Ponto de atenção';
+    if (a.pts === 3) { flagClass = 'best'; flagText = 'Leitura mais estratégica'; }
+    else if (a.pts === 2) { flagClass = 'ok'; flagText = 'Leitura relevante, mas incompleta'; }
+    else if (a.pts === 1) { flagClass = 'partial'; flagText = 'Leitura parcial'; }
+
+    const div = document.createElement('div');
+    div.className = 'g-item';
+    div.innerHTML = `
+      <div class="g-front">Pergunta ${i + 1} · ${a.front}</div>
+      <div class="g-your"><span class="flag ${flagClass}">${flagText}</span>${a.chosenText}</div>
+      <div class="g-ideal"><strong>Por trás dessa situação:</strong> ${a.idealNote}</div>
+    `;
+    table.appendChild(div);
+  });
+
+  setupDownload(total, band);
+}
+
+let downloadPayload = '';
+function setupDownload(total, band) {
+  const lines = [];
+  lines.push('SIMULADOR DE DIAGNÓSTICO: CASO CURSYA');
+  lines.push('RP & Comunicação Digital · Aula 14');
+  lines.push('');
+  lines.push(`Pontuação final: ${total}/24`);
+  lines.push(`Classificação: ${band.label}`);
+  lines.push(band.desc);
+  lines.push('');
+  answers.forEach((a, i) => {
+    lines.push(`Pergunta ${i + 1} (${a.front})`);
+    lines.push(`Resposta escolhida: ${a.chosenText}`);
+    lines.push(`Leitura de referência: ${a.idealNote}`);
+    lines.push('');
+  });
+  downloadPayload = lines.join('\n');
+
+  if (hasClaudeRuntime()) {
+    claude.use('downloads').then(d => {
+      if (!d) { document.getElementById('btn-download').style.display = 'none'; }
+    }).catch(() => {
+      document.getElementById('btn-download').style.display = 'none';
+    });
+  }
+  // when there is no Claude runtime (e.g. the file is hosted on its own),
+  // the button stays visible and falls back to a plain browser download
+}
+
+function hasClaudeRuntime() {
+  return typeof window.claude !== 'undefined' && typeof window.claude.use === 'function';
+}
+
+async function downloadResult() {
+  if (hasClaudeRuntime()) {
+    try {
+      const downloads = await claude.use('downloads');
+      if (downloads) {
+        await downloads.save({ filename: 'diagnostico-cursya-resultado.txt', data: downloadPayload });
+        return;
+      }
+    } catch (e) {
+      // viewer declined or save unavailable; fall through to plain download
+    }
+  }
+  const blob = new Blob([downloadPayload], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'diagnostico-cursya-resultado.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
